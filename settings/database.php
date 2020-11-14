@@ -1,19 +1,19 @@
 <?php
 	$database="sphider";
-	$mysql_user = "root";
-	$mysql_password = ""; 
+	$mysql_user = "user";
+	$mysql_password = "password"; 
 	$mysql_host = "localhost";
 	$mysql_table_prefix = "";
 
 
+	$mysql_dsn = "mysql:host=" . $mysql_host . ";dbname=" . $database;
 
-	$success = mysql_pconnect ($mysql_host, $mysql_user, $mysql_password);
-	if (!$success)
-		die ("<b>Cannot connect to database, check if username, password and host are correct.</b>");
-    $success = mysql_select_db ($database);
-	if (!$success) {
-		print "<b>Cannot choose database, check if database name is correct.";
-		die();
+	try {
+		$db = new PDO($mysql_dsn, $mysql_user, $mysql_password);
+	} catch (PDOException $e) {
+			print($e->getMessage() . "<br>");
+			print("<b>Cannot connect to database, check if username, password and host are correct.</b>");
+			die();
 	}
 ?>
 

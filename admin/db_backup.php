@@ -2,14 +2,14 @@
 include "auth.php";
 $backup_path="./backup/";
 
-$stats  = mysql_query("SHOW TABLE STATUS FROM $database LIKE '$mysql_table_prefix%'");
-$numtables = mysql_num_rows($stats);
+$stats = $db->query("SHOW TABLE STATUS FROM $database LIKE '$mysql_table_prefix%'");
+$numtables = $stats->rowCount();
 $starttime=microtime();
 if($send2=="Optimize"){
 	$i = 0;  
 	while($i < $numtables) {
 		if (isset($tables[$i])) {
-		  mysql_query("OPTIMIZE TABLE ".$tables[$i]);
+		  $db->exec("OPTIMIZE TABLE ".$tables[$i]);
 
 			}
 		$i++;
@@ -22,13 +22,12 @@ if($send2=="Optimize"){
         $copyr="# Table backup from Sphider\n".
                "# Creation date: ".date("d-M-Y H:s",time())."\n".
                "# Database: ".$database."\n".
-               "# MySQL Server version: ".mysql_get_server_info()."\n\n" ;
+               "# MySQL Server version: ". $db->query('select version()')->fetchColumn() . "\n\n" ;
 	gzwrite ($fp,$copyr);
 	gzclose ($fp);
   chmod($backup_path.$filename, 0777);
 
-
-if (!eregi("/restore\.",$_SERVER['PHP_SELF'])) {
+if (!preg_match("/restore\./i",$_SERVER['PHP_SELF'])) {
 	$cur_time=date("Y-m-d H:i");
 	$i = 0;  
 	$fp = gzopen ($backup_path.$filename,"a");

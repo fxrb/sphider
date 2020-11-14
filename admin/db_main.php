@@ -68,17 +68,17 @@ function checkAll(theForm, cName, allNo_stat) {
 	<td width="17%" class="greyHeading"><b>Index Size kB</b></font></td>
   </tr>
  <?php
+	  global $db;
 
-
-		$stats  = mysql_query ("SHOW TABLE STATUS FROM $dbname LIKE '$dbprefix%'");
-		$num_tables = mysql_num_rows($stats);
+		$stats  = $db->query("SHOW TABLE STATUS FROM $dbname LIKE '$dbprefix%'");
+		$num_tables = $stats->rowCount();
 		if ($num_tables==0) {
 			echo("ERROR: Database contains no tables");
 		}	
 
 		$bgcolor='grey';
 		$i=0;
-		while ($rows=mysql_fetch_array($stats) ) {
+		while ($rows = $stats->fetch()) {
 			print "<tr><td class=".$bgcolor."><input type='checkbox' id='tables$i' class='check' name='tables[$i]' value='".$rows["Name"]."' ></td>";
 			print "<td class=".$bgcolor.">".$rows["Name"]."</td>";
 			print '<td align="center" class='.$bgcolor.'>'.$rows['Rows'].'</td>';
@@ -183,7 +183,8 @@ if (isset($file) && $del==1) {
 		
 
 	while ($file = readdir ($dir)) { 
-		if ($file != "." && $file != ".." &&  (eregi("\.sql",$file) || eregi("\.gz",$file))){
+//		if ($file != "." && $file != ".." &&  (eregi("\.sql",$file) || eregi("\.gz",$file))){
+		if ($file != "." && $file != ".." &&  (preg_match("\.sql/i",$file) || preg_match("\.gz/i",$file))){
 			if($is_first==1){
 				echo "<tr> 
 				<td width=\"30%\" align=\"center\" class=\"greyHeading\"><b>File</b></td>

@@ -11,7 +11,7 @@ extract($search_results);
 
 <?php if ($search_results['ignore_words']){?>
 	<div id="common_report">
-	<?php while ($thisword=each($ignore_words)) {
+	<?php foreach ($ignore_words as $thisword) {
 		$ignored .= " ".$thisword[1];
 	}		
 	$msg = str_replace ('%ignored_words', $ignored, $sph_messages["ignoredWords"]); 

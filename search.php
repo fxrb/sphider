@@ -109,15 +109,12 @@ function poweredby () {
 
 
 function saveToLog ($query, $elapsed, $results) {
-        global $mysql_table_prefix;
+        global $mysql_table_prefix, $db;
     if ($results =="") {
         $results = 0;
     }
     $query =  "insert into ".$mysql_table_prefix."query_log (query, time, elapsed, results) values ('$query', now(), '$elapsed', '$results')";
-	mysql_query($query);
-                    
-	echo mysql_error();
-                        
+		$db->query($query);
 }
 
 switch ($search) {

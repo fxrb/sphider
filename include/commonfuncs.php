@@ -18,11 +18,17 @@
 	* @return array|null massiiv
 	 */
 	function sql_fetch_all($query) {
-		$result = mysql_query($query);
-		if($mysql_err = mysql_errno()) {
-			print $query.'<br>'.mysql_error();
+		global $db;
+	 	$error = false;
+		try {
+			$result = $db->query($query);
+		} catch (PDOException $sql_err) {
+			$error = true;
+		}
+		if ($error) {
+			print $query.'<br>'.$sql_err->getMessage();
 		} else {
-			while($row=mysql_fetch_array($result)) {
+			while($row = $result->fetch()) {
 				$data[]=$row;
 			}	
 		}		
@@ -53,13 +59,12 @@
 	}
 
 	function get_cats($parent) {
-		global $mysql_table_prefix;
+		global $mysql_table_prefix, $db;
 		$query = "SELECT * FROM ".$mysql_table_prefix."categories WHERE parent_num=$parent";
-		echo mysql_error();
-		$result = mysql_query($query);
+		$result = $db->query($query);
 		$arr[] = $parent;
-		if (mysql_num_rows($result) <> '') {
-			while ($row = mysql_fetch_array($result)) {
+		if ($result->rowCount() > 0) {
+			while ($row = $result->fetch()) {
 				$id = $row[category_id];
 				$arr = add_arrays($arr, get_cats($id));
 			}
@@ -179,10 +184,11 @@
 	$lines = @file($include_dir.'/common.txt');
 
 	if (is_array($lines)) {
-		while (list($id, $word) = each($lines))
+		foreach($lines as $id => $word) {
 			$common[trim($word)] = 1;
+		}
 	}
-
+			
 	$ext = array
 		(
 		);

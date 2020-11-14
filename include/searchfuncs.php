@@ -50,7 +50,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 	function makeboollist($a) {
 		global $entities, $stem_words;
-		while ($char = each($entities)) {
+		foreach ($entities as $char) {
 			$a = preg_replace("/".$char[0]."/i", $char[1], $a);
 		}
 		$a = trim($a);
@@ -147,12 +147,12 @@ error_reporting(E_ALL ^ E_NOTICE);
 	}
 
 	function search($searchstr, $category, $start, $per_page, $type, $domain) {
-		global $length_of_link_desc,$mysql_table_prefix, $show_meta_description, $merge_site_results, $stem_words, $did_you_mean_enabled ;
+		global $length_of_link_desc,$mysql_table_prefix, $show_meta_description, $merge_site_results, $stem_words, $did_you_mean_enabled, $db;
 		
 		$possible_to_find = 1;
-		$result = mysql_query("select domain_id from ".$mysql_table_prefix."domains where domain = '$domain'");
-		if (mysql_num_rows($result)> 0) {
-			$thisrow = mysql_fetch_array($result);
+		$result = $db->query("select domain_id from ".$mysql_table_prefix."domains where domain = '$domain'");
+		if ($result->rowCount > 0) {
+			$thisrow = $result->fetch;
 			$domain_qry = "and domain = ".$thisrow[0];
 		} else {
 			$domain_qry = "";
@@ -165,7 +165,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 		$wordarray = $searchstr['-'];
 		$notlist = array();
 		$not_words = 0;
-		while ($not_words < count($wordarray)) {
+		while (is_array($wordarray) && ($not_words < count($wordarray))) {
 			if ($stem_words == 1) {
 				$searchword = addslashes(stem($wordarray[$not_words]));
 			} else {
@@ -175,9 +175,9 @@ error_reporting(E_ALL ^ E_NOTICE);
 
             $query1 = "SELECT link_id from ".$mysql_table_prefix."link_keyword$wordmd5, ".$mysql_table_prefix."keywords where ".$mysql_table_prefix."link_keyword$wordmd5.keyword_id= ".$mysql_table_prefix."keywords.keyword_id and keyword='$searchword'";
 
-			$result = mysql_query($query1);
+			$result = $db->query($query1);
 
-			while ($row = mysql_fetch_row($result)) {	
+			while ($row = $result->fetch()) {	
 				$notlist[$not_words]['id'][$row[0]] = 1;
 			}
 			$not_words++;
@@ -187,18 +187,17 @@ error_reporting(E_ALL ^ E_NOTICE);
 		//find all sites containing the search phrase
 		$wordarray = $searchstr['+s'];
 		$phrase_words = 0;
-		while ($phrase_words < count($wordarray)) {
+		while (is_array($wordarray) && ($phrase_words < count($wordarray))) {
 
 			$searchword = addslashes($wordarray[$phrase_words]);
 			$query1 = "SELECT link_id from ".$mysql_table_prefix."links where fulltxt like '% $searchword%'";
-			echo mysql_error();
-			$result = mysql_query($query1);
-			$num_rows = mysql_num_rows($result);
+			$result = $db->query($query1);
+			$num_rows =$result->rowCount();
 			if ($num_rows == 0) {
 				$possible_to_find = 0;
 				break;
 			}
-			while ($row = mysql_fetch_row($result)) {	
+			while ($row = $result->fetch()) {	
 				$phraselist[$phrase_words]['id'][$row[0]] = 1;
 			}
 			$phrase_words++;
@@ -209,13 +208,12 @@ error_reporting(E_ALL ^ E_NOTICE);
 			$allcats = get_cats($category);
 			$catlist = implode(",", $allcats);
 			$query1 = "select link_id from ".$mysql_table_prefix."links, ".$mysql_table_prefix."sites, ".$mysql_table_prefix."categories, ".$mysql_table_prefix."site_category where ".$mysql_table_prefix."links.site_id = ".$mysql_table_prefix."sites.site_id and ".$mysql_table_prefix."sites.site_id = ".$mysql_table_prefix."site_category.site_id and ".$mysql_table_prefix."site_category.category_id in ($catlist)";
-			$result = mysql_query($query1);
-			echo mysql_error();
-			$num_rows = mysql_num_rows($result);
+			$result = $db->query($query1);
+			$num_rows = $result->rowCount();
 			if ($num_rows == 0) {
 				$possible_to_find = 0;
 			}
-			while ($row = mysql_fetch_row($result)) {	
+			while ($row = $result->fetch()) {	
 				$category_list[$row[0]] = 1;
 			}
 		}
@@ -233,9 +231,8 @@ error_reporting(E_ALL ^ E_NOTICE);
 			}
 			$wordmd5 = substr(md5($searchword), 0, 1);
 			$query1 = "SELECT distinct link_id, weight, domain from ".$mysql_table_prefix."link_keyword$wordmd5, ".$mysql_table_prefix."keywords where ".$mysql_table_prefix."link_keyword$wordmd5.keyword_id= ".$mysql_table_prefix."keywords.keyword_id and keyword='$searchword' $domain_qry order by weight desc";
-			echo mysql_error();
-			$result = mysql_query($query1);
-			$num_rows = mysql_num_rows($result);
+			$result = $db->query($query1);
+			$num_rows = $result->rowCount();
 			if ($num_rows == 0) {
 				if ($type != "or") {
 					$possible_to_find = 0;
@@ -248,7 +245,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 				$indx = $words;
 			}
 
-			while ($row = mysql_fetch_row($result)) {	
+			while ($row = $result->fetch()) {	
 				$linklist[$indx]['id'][] = $row[0];
 				$domains[$row[0]] = $row[2];
 				$linklist[$indx]['weight'][$row[0]] = $row[1];
@@ -326,10 +323,10 @@ error_reporting(E_ALL ^ E_NOTICE);
 			reset ($searchstr['+']);
 			foreach ($searchstr['+'] as $word) {
 				$word = addslashes($word);
-				$result = mysql_query("select keyword from ".$mysql_table_prefix."keywords where soundex(keyword) = soundex('$word')");
+				$result = $db->query("select keyword from ".$mysql_table_prefix."keywords where soundex(keyword) = soundex('$word')");
 				$max_distance = 100;
 				$near_word ="";
-				while ($row=mysql_fetch_row($result)) {
+				while ($row = $result->fetch()) {
 					
 					$distance = levenshtein($row[0], $word);
 					if ($distance < $max_distance && $distance <4) {
@@ -365,8 +362,8 @@ error_reporting(E_ALL ^ E_NOTICE);
 			$result_array_temp = $result_array_full;
 		}
 	
-		
-		while (list($key, $value) = each ($result_array_temp)) {
+
+		foreach ($result_array_temp as $key => $value) {
 			$result_array[$key] = $value;
 			if (isset ($domains_to_show[$domains[$key]]) && $domains_to_show[$domains[$key]] != 1) {
 				list ($k, $v) = each($domains_to_show[$domains[$key]]);
@@ -400,11 +397,10 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 		$query1 = "SELECT distinct link_id, url, title, description,  $fulltxt, size FROM ".$mysql_table_prefix."links WHERE link_id in ($inlist)";
 
-		$result = mysql_query($query1);
-		echo mysql_error();
+		$result = $db->query($query1);
 
 		$i = 0;
-		while ($row = mysql_fetch_row($result)) {
+		while ($row = $result->fetch()) {
 			$res[$i]['title'] = $row[2];
 			$res[$i]['url'] = $row[1];
 			if ($row[3] != null && $show_meta_description == 1)
@@ -413,8 +409,8 @@ error_reporting(E_ALL ^ E_NOTICE);
 				$res[$i]['fulltxt'] = $row[4];
 			$res[$i]['size'] = $row[5];
 			$res[$i]['weight'] = $result_array[$row[0]];
-			$dom_result = mysql_query("select domain from ".$mysql_table_prefix."domains where domain_id='".$domains[$row[0]]."'");
-			$dom_row = mysql_fetch_row($dom_result);
+			$dom_result = $db->query("select domain from ".$mysql_table_prefix."domains where domain_id='".$domains[$row[0]]."'");
+			$dom_row = $dom_result->fetch();
 			$res[$i]['domain'] = $dom_row[0];
 			$i++;
 		}
@@ -426,7 +422,6 @@ error_reporting(E_ALL ^ E_NOTICE);
 		} else {
 			usort($res, "cmp"); 	
 		}
-		echo mysql_error();
 		$res['maxweight'] = $maxweight;
 		$res['results'] = $results;
 		return $res;
@@ -546,7 +541,7 @@ function get_search_results($query, $start, $category, $searchtype, $results, $d
 				$x = 0;
 				$begin = 0;
 				$end = 0;
-				while(list($id, $place) = each($places)) {
+				foreach ($places as $id => $place) {
 					while ($places[$id + $x] - $place < $desc_length && $x+$id < count($places) && $place < strlen($fulltxt) -$desc_length) {
 						$x++;
 						$begin = $id;

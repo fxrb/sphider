@@ -37,16 +37,16 @@ if (!strpos($_GET['q'],' '))
 
 if ($suggest_history && $_GET['q']!='"')
 {
-	$result = mysql_query($sql = "
+	$result = $db->query($sql = "
 	SELECT 	query as keyword, max(results) as results
 	FROM {$mysql_table_prefix}query_log 
 	WHERE results > 0 AND (query LIKE '{$_GET['q']}%' OR query LIKE '\"{$_GET['q']}%') 
 	GROUP BY query ORDER BY results DESC
 	LIMIT $suggest_rows
 	");
-	if($result && mysql_num_rows($result))
+	if($result && $result->rowCount())
 	{
-	    while($row = mysql_fetch_array($result))
+	    while($row = $result->fetch())
 	    {
 	        $values[$row['keyword']] = $row['results'];
 	    }    
@@ -63,13 +63,13 @@ if ($suggest_phrases)
 	$_GET['q'] = strtolower( str_replace('"','',$_GET['q'] ));
 	$_words = substr_count($_GET['q'],' ') + 1; 
 	
-	$result = mysql_query($sql = "
+	$result = $dd->query($sql = "
 	SELECT count(link_id) as results, SUBSTRING_INDEX(SUBSTRING(fulltxt,LOCATE('{$_GET['q']}',LOWER(fulltxt))), ' ', '$_words') as keyword FROM {$mysql_table_prefix}links where fulltxt like '%{$_GET['q']}%' 
 	GROUP BY SUBSTRING_INDEX( SUBSTRING( fulltxt, LOCATE( '{$_GET['q']}', LOWER(fulltxt) ) ) , ' ', '$_words' ) LIMIT $suggest_rows
 	");
-	if($result && mysql_num_rows($result))
+	if($result && $result->rowCount())
 	{
-	    while($row = mysql_fetch_array($result))
+	    while($row = $result->fetch())
 	    {
 	    	//$row['keyword'] = preg_replace("/[^\s\w]/ims",'',$row['keyword']);//array('.',',','?')$row['keyword']);
 	         $values[$row['keyword']] = $row['results'];
@@ -85,7 +85,7 @@ elseif ($suggest_keywords)
 {
 	for ($i=0;$i<=15; $i++) {
 		$char = dechex($i);
-		$result = mysql_query($sql = "
+		$result = $db->query($sql = "
 		SELECT keyword, count(keyword) as results 
 		FROM {$mysql_table_prefix}keywords INNER JOIN {$mysql_table_prefix}link_keyword$char USING (keyword_id) 
 		WHERE keyword LIKE '{$_GET['q']}%'  
@@ -93,8 +93,8 @@ elseif ($suggest_keywords)
 		ORDER BY results desc
 		LIMIT $suggest_rows
 		");
-		if($result && mysql_num_rows($result)) {		
-		    while($row = mysql_fetch_array($result)) {
+		if($result && $result->rowCount()) {		
+		    while($row = $result->fetch()) {
 		        $values[$row['keyword']] = $row['results'];
 		    }    
 		}

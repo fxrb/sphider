@@ -159,7 +159,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 		}
 
 		//find all sites that should not be included in the result
-		if (count($searchstr['+']) == 0) {
+		if (is_array($searchstr['+']) && (count($searchstr['+']) == 0)) {
 			return null;
 		}
 		$wordarray = $searchstr['-'];
@@ -223,7 +223,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 		$wordarray = $searchstr['+'];
 		$words = 0;
 		$starttime = getmicrotime();
-		while (($words < count($wordarray)) && $possible_to_find == 1) {
+		while (is_array($wordarray) && (($words < count($wordarray)) && $possible_to_find == 1)) {
 			if ($stem_words == 1) {
 				$searchword = addslashes(stem($wordarray[$words]));
 			} else {
@@ -277,7 +277,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 				$temp_array = $linklist[$min]['id'];
 				$count = 0;
-				while ($j < count($temp_array)) {
+				while (is_array($temp_array) && ($j < count($temp_array))) {
 					$k = 0; //and word counter
 					$n = 0; //not word counter
 					$o = 0; //phrase word counter
@@ -320,25 +320,27 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 
 		if ((count($result_array_full) == 0 || $possible_to_find == 0) && $did_you_mean_enabled == 1) {
-			reset ($searchstr['+']);
-			foreach ($searchstr['+'] as $word) {
-				$word = addslashes($word);
-				$result = $db->query("select keyword from ".$mysql_table_prefix."keywords where soundex(keyword) = soundex('$word')");
-				$max_distance = 100;
-				$near_word ="";
-				while ($row = $result->fetch()) {
-					
-					$distance = levenshtein($row[0], $word);
-					if ($distance < $max_distance && $distance <4) {
-						$max_distance = $distance;
-						$near_word = $row[0];
+			if (is_array($searchstr['+'])) {
+				reset ($searchstr['+']);
+				foreach ($searchstr['+'] as $word) {
+					$word = addslashes($word);
+					$result = $db->query("select keyword from ".$mysql_table_prefix."keywords where soundex(keyword) = soundex('$word')");
+					$max_distance = 100;
+					$near_word ="";
+					while ($row = $result->fetch()) {
+						
+						$distance = levenshtein($row[0], $word);
+						if ($distance < $max_distance && $distance <4) {
+							$max_distance = $distance;
+							$near_word = $row[0];
+						}
 					}
-				}
 
-				if ($near_word != "" && $word != $near_word) {
-					$near_words[$word] = $near_word;
-				}
+					if ($near_word != "" && $word != $near_word) {
+						$near_words[$word] = $near_word;
+					}
 
+				}
 			}
 			$res['did_you_mean'] = $near_words;
 			return $res;
